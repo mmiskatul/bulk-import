@@ -13,6 +13,14 @@ from app.services.parser import parse_upload
 router = APIRouter(prefix="/api")
 
 
+@router.get("/")
+async def root() -> dict[str, bool | str]:
+    return {
+        "success": True,
+        "message": "Bulk Update AI API is running successfully",
+    }
+
+
 @router.get("/health")
 async def healthcheck() -> dict[str, str]:
     return {"status": "ok"}

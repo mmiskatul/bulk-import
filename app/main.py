@@ -43,6 +43,13 @@ def create_app() -> FastAPI:
 
         return await call_next(request)
 
+    @app.get("/")
+    async def root() -> dict[str, bool | str]:
+        return {
+            "success": True,
+            "message": "Bulk Update AI API is running successfully",
+        }
+
     app.include_router(router)
     return app
 
