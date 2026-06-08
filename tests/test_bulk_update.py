@@ -30,8 +30,38 @@ def test_csv_normalize_returns_items() -> None:
     assert response.status_code == 200
     assert len(body) == 1
     assert body[0]["title"] == "Smart Watch Series 7"
-    assert body[0]["marketplace"] == "amazon"
     assert body[0]["price"] == 25.99
+    assert body[0]["stock"] == 3
+    assert body[0]["brand"] == "Acme"
+    assert body[0]["status"] == "clean"
+    assert "issues" not in body[0]
+
+
+def test_csv_import_returns_every_uploaded_row() -> None:
+    response = client.post(
+        "/bulk-import",
+        files={
+            "file": (
+                "many-products.csv",
+                (
+                    b"title,stock,price,description,color,size,brand,imageUrl\n"
+                    b"Blue T-Shirt,10,20.00,Cotton men's shirt,Blue,XL,Nike,http://image.com/a.jpg\n"
+                    b"AirPods Pro,5,120.00,White wireless earbuds,White,,Apple,http://image.com/b.jpg\n"
+                    b"Smart Watch S7,3,,Black smart watch,,L,Samsung,http://image.com/c.jpg\n"
+                ),
+                "text/csv",
+            )
+        },
+    )
+
+    body = response.json()
+    assert response.status_code == 200
+    assert len(body) == 3
+    assert body[0]["title"] == "Blue T-Shirt"
+    assert body[1]["title"] == "AirPods Pro"
+    assert body[2]["title"] == "Smart Watch S7"
+    assert body[2]["price"] is None
+    assert body[2]["issues"] == ["missing_price"]
 
 
 def test_image_normalize_returns_review_item() -> None:
@@ -44,7 +74,8 @@ def test_image_normalize_returns_review_item() -> None:
     assert response.status_code == 200
     assert body[0]["status"] == "needs_review"
     assert body[0]["title"] == "blue shirt"
-    assert body[0]["image_filename"] == "blue-shirt.png"
+    assert body[0]["imageUrl"] == "blue-shirt.png"
+    assert "needs_ai_review" in body[0]["issues"]
 
 
 def test_oversized_file_returns_json_413() -> None:

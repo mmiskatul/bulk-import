@@ -4,26 +4,32 @@ Standalone FastAPI service for bulk product import normalization.
 
 It accepts CSV, XLSX, PDF, and image uploads, runs a LangGraph normalization workflow, extracts product-like rows, and returns normalized JSON:
 
+For tabular uploads, every parsed product row is returned in the response array. There is no fixed product count such as 20 items; the array length follows the uploaded data.
+
 ```json
 [
   {
-    "id": "b4f8f3f7e3d1",
-    "source_file": "amazon-products.csv",
-    "marketplace": "amazon",
-    "status": "new",
-    "title": "Smart Watch Series 7",
-    "sku": "WTCH-S7-BLK",
-    "asin": "",
-    "barcode": "",
-    "stock": 3,
+    "title": "Blue T-Shirt",
     "price": 25.99,
-    "currency": "USD",
-    "category": "",
-    "brand": "Acme",
-    "description": "",
-    "image_filename": "",
-    "normalized": {},
-    "warnings": []
+    "stock": 3,
+    "description": "Cotton men's shirt",
+    "color": "Blue",
+    "size": "XL",
+    "brand": "Nike",
+    "imageUrl": "http://image.com/a.jpg",
+    "status": "clean"
+  },
+  {
+    "title": "Smart Watch S7",
+    "price": null,
+    "stock": 3,
+    "description": "Black smart watch",
+    "color": null,
+    "size": "L",
+    "brand": "Samsung",
+    "imageUrl": "http://image.com/c.jpg",
+    "status": "needs_review",
+    "issues": ["missing_price"]
   }
 ]
 ```

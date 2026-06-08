@@ -47,10 +47,11 @@ def build_bulk_update_graph():
 
         if state.get("ai_error"):
             for item in items:
-                if "AI normalization failed; deterministic normalization was used." not in item.warnings:
-                    item.warnings.append("AI normalization failed; deterministic normalization was used.")
-                if item.status == "new":
-                    item.status = "needs_review"
+                issues = item.issues or []
+                if "ai_fallback_used" not in issues:
+                    issues.append("ai_fallback_used")
+                item.issues = issues
+                item.status = "needs_review"
 
         return {**state, "items": items, "result": items}
 

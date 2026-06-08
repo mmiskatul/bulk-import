@@ -2,11 +2,10 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_serializer
 
 
-Marketplace = Literal["amazon", "ebay", "tiktok", "shopify", "unknown"]
-ImportStatus = Literal["new", "duplicate", "needs_review"]
+ImportStatus = Literal["clean", "needs_review"]
 SourceType = Literal["csv", "excel", "pdf", "image", "unknown"]
 
 
@@ -19,20 +18,20 @@ class ParsedFile(BaseModel):
 
 
 class BulkUpdateItem(BaseModel):
-    id: str
-    source_file: str
-    marketplace: Marketplace = "unknown"
-    status: ImportStatus = "needs_review"
     title: str
-    sku: str = ""
-    asin: str = ""
-    barcode: str = ""
+    price: float | None = Field(default=None, ge=0)
     stock: int = Field(default=0, ge=0)
-    price: float = Field(default=0.0, ge=0.0)
-    currency: str = "USD"
-    category: str = ""
-    brand: str = ""
     description: str = ""
-    image_filename: str = ""
-    normalized: dict[str, str | int | float | list[str]] = Field(default_factory=dict)
-    warnings: list[str] = Field(default_factory=list)
+    color: str | None = None
+    size: str | None = None
+    brand: str = ""
+    imageUrl: str | None = None
+    status: ImportStatus = "needs_review"
+    issues: list[str] | None = None
+
+    @model_serializer(mode="wrap")
+    def serialize_without_empty_issues(self, handler):
+        data = handler(self)
+        if data.get("issues") is None:
+            data.pop("issues", None)
+        return data
