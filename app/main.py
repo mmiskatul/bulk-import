@@ -11,12 +11,13 @@ from app.core.exceptions import register_exception_handlers
 
 def create_app() -> FastAPI:
     settings = get_settings()
+    allow_all_origins = "*" in settings.cors_origins
     app = FastAPI(title=settings.app_name, version=settings.app_version)
     register_exception_handlers(app)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=list(settings.cors_origins),
-        allow_credentials=True,
+        allow_credentials=not allow_all_origins,
         allow_methods=["*"],
         allow_headers=["*"],
     )
