@@ -1,0 +1,15 @@
+services:
+  bulk-update-ai:
+    build: .
+    container_name: bulk-update-ai
+    env_file:
+      - .env
+    ports:
+      - "${PORT:-8100}:8100"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8100/api/health', timeout=5).read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
