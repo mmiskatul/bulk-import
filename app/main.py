@@ -47,7 +47,7 @@ def create_app() -> FastAPI:
     async def root() -> dict[str, bool | str]:
         return {
             "success": True,
-            "message": "Bulk Update AI API is running successfully",
+            "message": "Bulk Import AI API is running successfully",
         }
 
     app.include_router(router)

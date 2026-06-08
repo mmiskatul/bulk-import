@@ -8,7 +8,7 @@ from typing import Any
 from openai import AsyncOpenAI
 
 from app.core.config import get_settings
-from app.schemas import BulkUpdateItem, BulkUpdateResponse, BulkUpdateSummary, ParsedFile
+from app.schemas import BulkUpdateItem, ParsedFile
 
 
 FIELD_ALIASES = {
@@ -117,16 +117,6 @@ def deterministic_normalize(parsed_files: list[ParsedFile], marketplace: str) ->
     return mark_duplicates(items)
 
 
-def summarize(files_count: int, rows_detected: int, items: list[BulkUpdateItem]) -> BulkUpdateSummary:
-    return BulkUpdateSummary(
-        files_received=files_count,
-        rows_detected=rows_detected,
-        items_generated=len(items),
-        duplicates=sum(1 for item in items if item.status == "duplicate"),
-        needs_review=sum(1 for item in items if item.status == "needs_review"),
-    )
-
-
 def _schema() -> dict[str, Any]:
     return {
         "type": "object",
@@ -227,7 +217,7 @@ async def ai_normalize(parsed_files: list[ParsedFile], marketplace: str, fallbac
     return mark_duplicates([BulkUpdateItem.model_validate(item) for item in parsed.get("items", [])])
 
 
-async def normalize(parsed_files: list[ParsedFile], marketplace: str, use_ai: bool) -> BulkUpdateResponse:
+async def normalize(parsed_files: list[ParsedFile], marketplace: str, use_ai: bool) -> list[BulkUpdateItem]:
     fallback = deterministic_normalize(parsed_files, marketplace)
     items = fallback
     if use_ai:
@@ -236,12 +226,4 @@ async def normalize(parsed_files: list[ParsedFile], marketplace: str, use_ai: bo
         except Exception:
             items = fallback
 
-    return BulkUpdateResponse(
-        summary=summarize(len(parsed_files), sum(len(file.rows) for file in parsed_files), items),
-        items=items,
-    )
-
-
-def validate(items: list[BulkUpdateItem]) -> BulkUpdateResponse:
-    checked = mark_duplicates(items)
-    return BulkUpdateResponse(summary=summarize(0, len(checked), checked), items=checked)
+    return items

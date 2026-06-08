@@ -9,17 +9,16 @@ client = TestClient(app)
 
 
 def test_healthcheck() -> None:
-    response = client.get("/api/health")
+    response = client.get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
 
 
 def test_csv_normalize_returns_items() -> None:
     response = client.post(
-        "/api/bulk-update/normalize",
-        data={"marketplace": "amazon", "use_ai": "false"},
+        "/bulk-import",
         files={
-            "files": (
+            "file": (
                 "amazon-products.csv",
                 b"title,sku,stock,price,brand\nSmart Watch Series 7,WTCH-S7-BLK,3,25.99,Acme\n",
                 "text/csv",
@@ -29,31 +28,29 @@ def test_csv_normalize_returns_items() -> None:
 
     body = response.json()
     assert response.status_code == 200
-    assert body["summary"]["items_generated"] == 1
-    assert body["items"][0]["title"] == "Smart Watch Series 7"
-    assert body["items"][0]["marketplace"] == "amazon"
-    assert body["items"][0]["price"] == 25.99
+    assert len(body) == 1
+    assert body[0]["title"] == "Smart Watch Series 7"
+    assert body[0]["marketplace"] == "amazon"
+    assert body[0]["price"] == 25.99
 
 
 def test_image_normalize_returns_review_item() -> None:
     response = client.post(
-        "/api/bulk-update/normalize",
-        data={"marketplace": "auto", "use_ai": "false"},
-        files={"files": ("blue-shirt.png", b"\x89PNG\r\n\x1a\n" + (b"\x00" * 32), "image/png")},
+        "/bulk-import",
+        files={"file": ("blue-shirt.png", b"\x89PNG\r\n\x1a\n" + (b"\x00" * 32), "image/png")},
     )
 
     body = response.json()
     assert response.status_code == 200
-    assert body["summary"]["needs_review"] == 1
-    assert body["items"][0]["title"] == "blue shirt"
-    assert body["items"][0]["image_filename"] == "blue-shirt.png"
+    assert body[0]["status"] == "needs_review"
+    assert body[0]["title"] == "blue shirt"
+    assert body[0]["image_filename"] == "blue-shirt.png"
 
 
 def test_oversized_file_returns_json_413() -> None:
     response = client.post(
-        "/api/bulk-update/normalize",
-        data={"marketplace": "auto", "use_ai": "false"},
-        files={"files": ("large.csv", b"a" * (10 * 1024 * 1024 + 1), "text/csv")},
+        "/bulk-import",
+        files={"file": ("large.csv", b"a" * (10 * 1024 * 1024 + 1), "text/csv")},
     )
 
     body = response.json()
@@ -64,9 +61,8 @@ def test_oversized_file_returns_json_413() -> None:
 
 def test_invalid_xlsx_returns_json_400() -> None:
     response = client.post(
-        "/api/bulk-update/normalize",
-        data={"marketplace": "auto", "use_ai": "false"},
-        files={"files": ("broken.xlsx", b"not a valid zip", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+        "/bulk-import",
+        files={"file": ("broken.xlsx", b"not a valid zip", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
     )
 
     body = response.json()
@@ -75,10 +71,36 @@ def test_invalid_xlsx_returns_json_400() -> None:
     assert body["detail"]["code"] == "file_parse_error"
 
 
-def test_validation_error_returns_consistent_shape() -> None:
-    response = client.post("/api/bulk-update/validate", json={"items": [{"stock": -1}]})
+def test_missing_upload_files_returns_validation_error() -> None:
+    response = client.post(
+        "/bulk-import",
+    )
 
     body = response.json()
     assert response.status_code == 422
-    assert body["code"] == "validation_error"
-    assert body["path"] == "/api/bulk-update/validate"
+    assert body["code"] == "missing_upload_file"
+    assert body["path"] == "/bulk-import"
+
+
+def test_empty_upload_file_returns_clear_error() -> None:
+    response = client.post(
+        "/bulk-import",
+        files={"file": ("empty.csv", b"", "text/csv")},
+    )
+
+    body = response.json()
+    assert response.status_code == 400
+    assert body["detail"]["code"] == "empty_upload_file"
+
+
+def test_unsupported_file_type_returns_allowed_types() -> None:
+    response = client.post(
+        "/bulk-import",
+        files={"file": ("notes.txt", b"not product data", "text/plain")},
+    )
+
+    body = response.json()
+    assert response.status_code == 415
+    assert body["code"] == "unsupported_file_type"
+    assert body["detail"]["message"] == "Only Excel, CSV, PDF, or image files are allowed."
+    assert body["detail"]["allowed_file_types"] == ["excel", "csv", "pdf", "image"]

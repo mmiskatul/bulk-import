@@ -12,7 +12,7 @@ load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 
 class Settings(BaseModel):
-    app_name: str = "Bulk Update AI"
+    app_name: str = "Bulk Import AI"
     app_version: str = "0.1.0"
     host: str = "0.0.0.0"
     port: int = 8100

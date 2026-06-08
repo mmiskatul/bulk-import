@@ -1,4 +1,4 @@
-# Bulk Update AI Structure
+# Bulk Import AI Structure
 
 ```text
 app/

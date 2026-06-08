@@ -36,20 +36,3 @@ class BulkUpdateItem(BaseModel):
     image_filename: str = ""
     normalized: dict[str, str | int | float | list[str]] = Field(default_factory=dict)
     warnings: list[str] = Field(default_factory=list)
-
-
-class BulkUpdateSummary(BaseModel):
-    files_received: int
-    rows_detected: int
-    items_generated: int
-    duplicates: int
-    needs_review: int
-
-
-class BulkUpdateResponse(BaseModel):
-    summary: BulkUpdateSummary
-    items: list[BulkUpdateItem]
-
-
-class BulkUpdateValidateRequest(BaseModel):
-    items: list[BulkUpdateItem]

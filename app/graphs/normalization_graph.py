@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import TypedDict
 
 from app.core.exceptions import BulkUpdateAPIError
-from app.services.normalizer import ai_normalize, deterministic_normalize, summarize
-from app.schemas import BulkUpdateItem, BulkUpdateResponse, ParsedFile
+from app.services.normalizer import ai_normalize, deterministic_normalize
+from app.schemas import BulkUpdateItem, ParsedFile
 
 
 class BulkUpdateGraphState(TypedDict, total=False):
@@ -14,7 +14,7 @@ class BulkUpdateGraphState(TypedDict, total=False):
     fallback_items: list[BulkUpdateItem]
     ai_items: list[BulkUpdateItem]
     items: list[BulkUpdateItem]
-    result: BulkUpdateResponse
+    result: list[BulkUpdateItem]
     ai_error: str
 
 
@@ -52,15 +52,7 @@ def build_bulk_update_graph():
                 if item.status == "new":
                     item.status = "needs_review"
 
-        result = BulkUpdateResponse(
-            summary=summarize(
-                len(state["parsed_files"]),
-                sum(len(file.rows) for file in state["parsed_files"]),
-                items,
-            ),
-            items=items,
-        )
-        return {**state, "items": items, "result": result}
+        return {**state, "items": items, "result": items}
 
     graph.add_node("deterministic_normalize", deterministic_node)
     graph.add_node("ai_normalize", ai_node)
@@ -79,7 +71,7 @@ async def run_bulk_update_graph(
     *,
     marketplace: str,
     use_ai: bool,
-) -> BulkUpdateResponse:
+) -> list[BulkUpdateItem]:
     try:
         graph = build_bulk_update_graph()
         state = await graph.ainvoke(

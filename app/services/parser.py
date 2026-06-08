@@ -116,7 +116,14 @@ async def parse_upload(upload: UploadFile, max_size_bytes: int) -> ParsedFile:
     content_type = upload.content_type or "application/octet-stream"
 
     if not data:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"{filename} is empty.")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "message": f"{filename} is empty. Please upload a file with data.",
+                "code": "empty_upload_file",
+                "filename": filename,
+            },
+        )
     if len(data) > max_size_bytes:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
@@ -148,10 +155,11 @@ async def parse_upload(upload: UploadFile, max_size_bytes: int) -> ParsedFile:
             raise HTTPException(
                 status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
                 detail={
-                    "message": f"{filename} must be a CSV, XLSX, PDF, or image file.",
+                    "message": "Only Excel, CSV, PDF, or image files are allowed.",
                     "code": "unsupported_file_type",
                     "filename": filename,
                     "content_type": content_type,
+                    "allowed_file_types": ["excel", "csv", "pdf", "image"],
                 },
             )
     except ValueError as exc:

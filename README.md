@@ -1,40 +1,31 @@
-# Bulk Update AI
+# Bulk Import AI
 
 Standalone FastAPI service for bulk product import normalization.
 
 It accepts CSV, XLSX, PDF, and image uploads, runs a LangGraph normalization workflow, extracts product-like rows, and returns normalized JSON:
 
 ```json
-{
-  "summary": {
-    "files_received": 1,
-    "rows_detected": 2,
-    "items_generated": 2,
-    "duplicates": 0,
-    "needs_review": 0
-  },
-  "items": [
-    {
-      "id": "b4f8f3f7e3d1",
-      "source_file": "amazon-products.csv",
-      "marketplace": "amazon",
-      "status": "new",
-      "title": "Smart Watch Series 7",
-      "sku": "WTCH-S7-BLK",
-      "asin": "",
-      "barcode": "",
-      "stock": 3,
-      "price": 25.99,
-      "currency": "USD",
-      "category": "",
-      "brand": "Acme",
-      "description": "",
-      "image_filename": "",
-      "normalized": {},
-      "warnings": []
-    }
-  ]
-}
+[
+  {
+    "id": "b4f8f3f7e3d1",
+    "source_file": "amazon-products.csv",
+    "marketplace": "amazon",
+    "status": "new",
+    "title": "Smart Watch Series 7",
+    "sku": "WTCH-S7-BLK",
+    "asin": "",
+    "barcode": "",
+    "stock": 3,
+    "price": 25.99,
+    "currency": "USD",
+    "category": "",
+    "brand": "Acme",
+    "description": "",
+    "image_filename": "",
+    "normalized": {},
+    "warnings": []
+  }
+]
 ```
 
 ## Run
@@ -52,9 +43,8 @@ Open `http://127.0.0.1:8100/docs`.
 
 ## Endpoints
 
-- `GET /api/health`
-- `POST /api/bulk-update/normalize`
-- `POST /api/bulk-update/validate`
+- `GET /health`
+- `POST /bulk-import`
 
 ## Project Structure
 
@@ -68,11 +58,32 @@ app/
   main.py     app factory and middleware
 ```
 
-`normalize` form fields:
+`bulk-import` form field:
 
-- `files`: one or more files, CSV/XLSX/PDF/image
-- `marketplace`: `auto`, `amazon`, `ebay`, `tiktok`, or `shopify`
-- `use_ai`: `true` or `false`
+- `file`: one CSV/XLSX/PDF/image upload
+
+Direct upload:
+
+```bash
+curl -X POST http://127.0.0.1:8100/bulk-import \
+  -F "file=@examples/sample-products.csv"
+```
+
+If a different file type is uploaded, the API returns:
+
+```json
+{
+  "detail": {
+    "message": "Only Excel, CSV, PDF, or image files are allowed.",
+    "code": "unsupported_file_type",
+    "filename": "notes.txt",
+    "content_type": "text/plain",
+    "allowed_file_types": ["excel", "csv", "pdf", "image"]
+  },
+  "code": "unsupported_file_type",
+  "path": "/bulk-import"
+}
+```
 
 Oversized uploads return JSON with `413` instead of breaking the service:
 
